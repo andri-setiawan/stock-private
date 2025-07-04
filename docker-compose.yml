@@ -1,0 +1,77 @@
+# AI Stock Trading Companion - Docker Compose Configuration
+version: '3.8'
+
+services:
+  stock-trader-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: stock-trader-ai:latest
+    container_name: stock-trader-ai-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # API Keys (override with your own values)
+      - NEXT_PUBLIC_FINNHUB_API_KEY=${NEXT_PUBLIC_FINNHUB_API_KEY:-d170vi9r01qkv5jdsaa0d170vi9r01qkv5jdsaag}
+      - NEXT_PUBLIC_GEMINI_API_KEY=${NEXT_PUBLIC_GEMINI_API_KEY:-AIzaSyDGiM_0F-fQsJY4OXZsAAGVjKMG_kuxytg}
+      # Authentication
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-super-secret-nextauth-secret-key-here}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - USER_PASSWORD_HASH=${USER_PASSWORD_HASH:-$2b$10$example.hash.for.password}
+    volumes:
+      # Optional: Mount data directory for persistent storage
+      - stock-trader-data:/app/data
+    networks:
+      - stock-trader-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/test-env', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Optional: Redis for caching (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: stock-trader-redis
+  #   restart: unless-stopped
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - stock-trader-network
+  #   command: redis-server --appendonly yes
+
+  # Optional: Nginx reverse proxy (uncomment for production)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: stock-trader-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - stock-trader-ai
+  #   networks:
+  #     - stock-trader-network
+
+volumes:
+  stock-trader-data:
+    driver: local
+  # redis-data:
+  #   driver: local
+
+networks:
+  stock-trader-network:
+    driver: bridge

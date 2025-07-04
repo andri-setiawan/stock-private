@@ -1,0 +1,9 @@
+# AI Stock Trading Companion - Kubernetes Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: stock-trader
+  labels:
+    name: stock-trader
+    app: stock-trader-ai
+    environment: production

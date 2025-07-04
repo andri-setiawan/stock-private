@@ -1,0 +1,14 @@
+# AI Stock Trading Companion - Kubernetes ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stock-trader-config
+  namespace: stock-trader
+  labels:
+    app: stock-trader-ai
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  NEXT_TELEMETRY_DISABLED: "1"
+  LOG_LEVEL: "info"
+  HEALTH_CHECK_INTERVAL: "30"

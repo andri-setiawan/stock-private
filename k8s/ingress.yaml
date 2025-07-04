@@ -1,0 +1,77 @@
+# AI Stock Trading Companion - Kubernetes Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: stock-trader-ingress
+  namespace: stock-trader
+  labels:
+    app: stock-trader-ai
+  annotations:
+    # Nginx Ingress Controller
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # SSL/TLS Configuration
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # Security Headers
+    nginx.ingress.kubernetes.io/custom-http-errors: "404,503"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options DENY always;
+      add_header X-Content-Type-Options nosniff always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://finnhub.io https://generativelanguage.googleapis.com;" always;
+    
+    # Performance
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    
+    # Caching for static assets
+    nginx.ingress.kubernetes.io/server-snippet: |
+      location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+      }
+      
+      location /_next/static/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+      }
+
+spec:
+  tls:
+  - hosts:
+    - stocks.yourdomain.com
+    - www.stocks.yourdomain.com
+    secretName: stock-trader-tls
+  rules:
+  - host: stocks.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: stock-trader-service
+            port:
+              number: 80
+  - host: www.stocks.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: stock-trader-service
+            port:
+              number: 80
